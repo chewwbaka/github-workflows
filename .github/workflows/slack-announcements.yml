@@ -19,39 +19,29 @@ jobs:
             echo "is_announcement=false" >> $GITHUB_OUTPUT
           fi
           
-      - name: Debug - Show raw payload
+      - name: Build Slack Message
         if: steps.check.outputs.is_announcement == 'true'
+        id: build_message
         run: |
-          echo "=== RAW PAYLOAD TEST ==="
-          echo "Title: ${{ github.event.discussion.title }}"
-          echo "Body: ${{ github.event.discussion.body }}"
-          echo "=== CHECKING FOR SPECIAL CHARACTERS ==="
-          echo "${{ github.event.discussion.body }}" | od -c | head -20
-          echo "=== WEBHOOK URL CHECK ==="
-          if [[ -z "${{ secrets.SLACK_DOGRAH_COMMUNITY_WEBHOOK_URL }}" ]]; then
-            echo "WARNING: Webhook URL is empty!"
-          else
-            echo "Webhook URL is set (length: ${#SLACK_WEBHOOK_URL})"
-          fi
+          # Create a formatted message with proper line breaks
+          {
+            echo 'message<<EOF'
+            echo "📢 New Announcement: ${{ github.event.discussion.title }}"
+            echo ""
+            echo "${{ github.event.discussion.body }}"
+            echo ""
+            echo "Author: ${{ github.event.discussion.user.login }}"
+            echo "View Discussion: ${{ github.event.discussion.html_url }}"
+            echo 'EOF'
+          } >> $GITHUB_OUTPUT
           
-      - name: Post to Slack (Simple Test)
+      - name: Post to Slack
         if: steps.check.outputs.is_announcement == 'true'
         uses: slackapi/slack-github-action@v1
         with:
           payload: |
             {
-              "text": "Test: New Announcement"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DOGRAH_COMMUNITY_WEBHOOK_URL }}
-          
-      - name: Post to Slack (Full Message)
-        if: steps.check.outputs.is_announcement == 'true'
-        uses: slackapi/slack-github-action@v1
-        with:
-          payload: |
-            {
-              "text": ${{ toJSON(format('📢 New Announcement: {0}\n\n{1}\n\nAuthor: {2}\nView Discussion: {3}', github.event.discussion.title, github.event.discussion.body, github.event.discussion.user.login, github.event.discussion.html_url)) }}
+              "text": ${{ toJSON(steps.build_message.outputs.message) }}
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DOGRAH_COMMUNITY_WEBHOOK_URL }}
