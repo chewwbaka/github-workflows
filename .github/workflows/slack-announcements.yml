@@ -19,18 +19,39 @@ jobs:
             echo "is_announcement=false" >> $GITHUB_OUTPUT
           fi
           
-      - name: Post to Slack
+      - name: Debug - Show raw payload
+        if: steps.check.outputs.is_announcement == 'true'
+        run: |
+          echo "=== RAW PAYLOAD TEST ==="
+          echo "Title: ${{ github.event.discussion.title }}"
+          echo "Body: ${{ github.event.discussion.body }}"
+          echo "=== CHECKING FOR SPECIAL CHARACTERS ==="
+          echo "${{ github.event.discussion.body }}" | od -c | head -20
+          echo "=== WEBHOOK URL CHECK ==="
+          if [[ -z "${{ secrets.SLACK_DOGRAH_COMMUNITY_WEBHOOK_URL }}" ]]; then
+            echo "WARNING: Webhook URL is empty!"
+          else
+            echo "Webhook URL is set (length: ${#SLACK_WEBHOOK_URL})"
+          fi
+          
+      - name: Post to Slack (Simple Test)
         if: steps.check.outputs.is_announcement == 'true'
         uses: slackapi/slack-github-action@v1
         with:
           payload: |
             {
-              "text": "📢 New Announcement: ${{ github.event.discussion.title }}
-              
-              ${{ github.event.discussion.body }}
-              
-              Author: ${{ github.event.discussion.user.login }}
-              View Discussion: ${{ github.event.discussion.html_url }}"
+              "text": "Test: New Announcement"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DOGRAH_COMMUNITY_WEBHOOK_URL }}
+          
+      - name: Post to Slack (Full Message)
+        if: steps.check.outputs.is_announcement == 'true'
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": ${{ toJSON(format('📢 New Announcement: {0}\n\n{1}\n\nAuthor: {2}\nView Discussion: {3}', github.event.discussion.title, github.event.discussion.body, github.event.discussion.user.login, github.event.discussion.html_url)) }}
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DOGRAH_COMMUNITY_WEBHOOK_URL }}
