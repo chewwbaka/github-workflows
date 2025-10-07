@@ -23,15 +23,25 @@ jobs:
         if: steps.check.outputs.is_announcement == 'true'
         id: build_message
         run: |
-          # Create a formatted message with proper line breaks
+          # Get the body content
+          BODY='${{ github.event.discussion.body }}'
+          
+          # Convert GitHub markdown to Slack mrkdwn format
+          # Convert **bold** to *bold* (Slack format)
+          BODY=$(echo "$BODY" | sed 's/\*\*\([^*]*\)\*\*/*\1*/g')
+          
+          # Convert [link text](url) to <url|link text> (Slack format)
+          BODY=$(echo "$BODY" | sed -E 's/\[([^]]+)\]\(([^)]+)\)/<\2|\1>/g')
+          
+          # Create the formatted message with proper line breaks
           {
             echo 'message<<EOF'
-            echo "📢 New Announcement: ${{ github.event.discussion.title }}"
+            echo "📢 *${{ github.event.discussion.title }}*"
             echo ""
-            echo "${{ github.event.discussion.body }}"
+            echo "$BODY"
             echo ""
-            echo "Author: ${{ github.event.discussion.user.login }}"
-            echo "View Discussion: ${{ github.event.discussion.html_url }}"
+            echo "_Posted by ${{ github.event.discussion.user.login }}_"
+            echo "<${{ github.event.discussion.html_url }}|View Discussion>"
             echo 'EOF'
           } >> $GITHUB_OUTPUT
           
