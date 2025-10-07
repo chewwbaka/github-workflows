@@ -38,11 +38,7 @@ jobs:
             body = body.replace(/\*\*([^*]+)\*\*/g, '*$1*');
             
             // Build message with real newlines
-            const message = `📢 *${title}*
-
-${body}
-
-<${url}|View Discussion>`;
+            const message = '📢 *' + title + '*\n\n' + body + '\n\n<' + url + '|View Discussion>';
             
             // Send to Slack
             const payload = { text: message };
