@@ -19,30 +19,13 @@ jobs:
             echo "is_announcement=false" >> $GITHUB_OUTPUT
           fi
           
-      - name: Build Slack Message
-        if: steps.check.outputs.is_announcement == 'true'
-        id: slack_message
-        run: |
-          # Use heredoc to safely handle the message content
-          {
-            echo 'message<<EOF'
-            echo "📢 *${{ github.event.discussion.title }}*"
-            echo ""
-            cat <<'BODY_END'
-${{ github.event.discussion.body }}
-BODY_END
-            echo ""
-            echo "<${{ github.event.discussion.html_url }}|View Discussion>"
-            echo 'EOF'
-          } | sed 's/\*\*\([^*]*\)\*\*/*\1*/g' >> $GITHUB_OUTPUT
-          
       - name: Post to Slack
         if: steps.check.outputs.is_announcement == 'true'
         uses: slackapi/slack-github-action@v1
         with:
           payload: |
             {
-              "text": ${{ toJSON(steps.slack_message.outputs.message) }}
+              "text": ${{ toJSON(format('📢 *{0}*\n\n{1}\n\n<{2}|View Discussion>', github.event.discussion.title, github.event.discussion.body, github.event.discussion.html_url)) }}
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DOGRAH_COMMUNITY_WEBHOOK_URL }}
