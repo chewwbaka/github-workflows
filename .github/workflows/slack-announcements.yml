@@ -25,7 +25,32 @@ jobs:
         with:
           payload: |
             {
-              "text": ${{ toJSON(format('📢 *{0}*\n\n{1}\n\n_Posted by {2}_\n<{3}|View Discussion>', github.event.discussion.title, github.event.discussion.body, github.event.discussion.user.login, github.event.discussion.html_url)) }}
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "📢 ${{ github.event.discussion.title }}",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ github.event.discussion.body }}"
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "<${{ github.event.discussion.html_url }}|View Discussion>"
+                    }
+                  ]
+                }
+              ]
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DOGRAH_COMMUNITY_WEBHOOK_URL }}
