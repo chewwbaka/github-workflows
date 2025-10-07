@@ -23,22 +23,15 @@ jobs:
         if: steps.check.outputs.is_announcement == 'true'
         id: build_message
         run: |
-          # Get the body content
-          BODY='${{ github.event.discussion.body }}'
-          
-          # Convert GitHub markdown to Slack mrkdwn format
-          # Convert **bold** to *bold* (Slack format)
-          BODY=$(echo "$BODY" | sed 's/\*\*\([^*]*\)\*\*/*\1*/g')
-          
-          # Convert [link text](url) to <url|link text> (Slack format)
-          BODY=$(echo "$BODY" | sed -E 's/\[([^]]+)\]\(([^)]+)\)/<\2|\1>/g')
-          
           # Create the formatted message with proper line breaks
+          # Using heredoc to handle special characters safely
           {
             echo 'message<<EOF'
             echo "📢 *${{ github.event.discussion.title }}*"
             echo ""
-            echo "$BODY"
+            cat <<'BODY_EOF'
+${{ github.event.discussion.body }}
+BODY_EOF
             echo ""
             echo "_Posted by ${{ github.event.discussion.user.login }}_"
             echo "<${{ github.event.discussion.html_url }}|View Discussion>"
