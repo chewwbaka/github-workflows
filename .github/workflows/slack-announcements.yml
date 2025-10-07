@@ -11,27 +11,13 @@ jobs:
       - name: Check if announcement
         id: check
         run: |
-          echo "Checking if this is an announcement..."
-          echo "Discussion category: ${{ github.event.discussion.category.name }}"
-          echo "Discussion category slug: ${{ github.event.discussion.category.slug }}"
-          
           if [[ "${{ github.event.discussion.category.slug }}" == "announcements" ]] || [[ "${{ github.event.discussion.category.name }}" == "Announcements" ]]; then
-            echo "This is an announcement!"
+            echo "✅ Announcement detected in category: ${{ github.event.discussion.category.name }}"
             echo "is_announcement=true" >> $GITHUB_OUTPUT
           else
-            echo "Not an announcement, category is: ${{ github.event.discussion.category.name }}"
+            echo "⏭️ Skipping - Not an announcement (category: ${{ github.event.discussion.category.name }})"
             echo "is_announcement=false" >> $GITHUB_OUTPUT
           fi
-          
-          echo "Final output: is_announcement=$(cat $GITHUB_OUTPUT | grep is_announcement | cut -d= -f2)"
-      - name: Debug - Show payload
-        if: steps.check.outputs.is_announcement == 'true'
-        run: |
-          echo "Preparing to send the following to Slack:"
-          echo "Title: ${{ github.event.discussion.title }}"
-          echo "Body: ${{ github.event.discussion.body }}"
-          echo "URL: ${{ github.event.discussion.html_url }}"
-          echo "Author: ${{ github.event.discussion.user.login }}"
           
       - name: Post to Slack
         if: steps.check.outputs.is_announcement == 'true'
@@ -39,30 +25,12 @@ jobs:
         with:
           payload: |
             {
-              "text": "New Announcement: ${{ github.event.discussion.title }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*${{ github.event.discussion.title }}*\n${{ github.event.discussion.body }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "<${{ github.event.discussion.html_url }}|View Discussion>"
-                  }
-                }
-              ]
+              "text": "📢 New Announcement: ${{ github.event.discussion.title }}
+              
+              ${{ github.event.discussion.body }}
+              
+              Author: ${{ github.event.discussion.user.login }}
+              View Discussion: ${{ github.event.discussion.html_url }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DOGRAH_COMMUNITY_WEBHOOK_URL }}
-          
-      - name: Debug - Skipped notification
-        if: steps.check.outputs.is_announcement != 'true'
-        run: |
-          echo "Slack notification skipped because this is not an announcement"
-          echo "is_announcement value: ${{ steps.check.outputs.is_announcement }}"
-          echo "Discussion category: ${{ github.event.discussion.category.name }}"
